@@ -21,5 +21,8 @@ if __name__ == "__main__":
             Client.download_file(content)
         if action == "ls":
             Client.NameNode.list_file()
+        if action == 'clear':
+            Client.clear()
         if action == 'quit':
             break
+

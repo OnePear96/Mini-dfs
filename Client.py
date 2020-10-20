@@ -1,6 +1,8 @@
 import os
 from NameNode import NameNode
 from DataNode import DataNode
+import shutil 
+
 
 class Client():
     '''
@@ -32,11 +34,15 @@ class Client():
         file_index = list(self.NameNode.index2filename.keys())[-1]
         file = open(filepath, 'rb')
         for i in range(self.num_chunks):
-            index = i
+            chunk_index = i
             list_nodes = nodes_assigned[i]
+            partfilename = str(file_index)+".part"+str(chunk_index)
+            current_position, filepartsize = position_size[i]
+            file.seek(current_position,0)
+            partfilecontent = file.read(filepartsize)
             for node_index in list_nodes:
                 Node = self.DataNodes[node_index]
-                Node.upload_file(file_index = file_index, chunk_index = index, position_size = position_size[index], file = file)
+                Node.upload_file(partfilename = partfilename, partfilecontent = partfilecontent)
     
     def download_file(self, fileindex): #or file index
         filename = self.NameNode.index2filename[fileindex]
@@ -47,4 +53,17 @@ class Client():
             Node = self.DataNodes[chunk_node[chunk_index]]
             Node.download_file(fileindex, chunk_index, file)
         file.close()
+
+
+    def clear(self):
+        self.NameNode.clear()
+        if os.path.isdir("dfs"):
+                shutil.rmtree("dfs")
+        if os.path.isdir("download"):
+            shutil.rmtree("download") 
+        os.makedirs("dfs") 
+        for i in range(self.N):
+            os.makedirs("dfs/datanode%d"%i)
+        os.makedirs("dfs/namenode")
+        os.makedirs("download")
         

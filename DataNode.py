@@ -20,7 +20,11 @@ class DataNode():
             filepart.flush()
     '''
 
-    def upload_file(self,file_index, chunk_index, partfilecontent)
+    def upload_file(self,partfilename, partfilecontent):
+        partfilepath = self.path + "/" + partfilename
+        with open(partfilepath, "wb") as filepart:
+            filepart.write(partfilecontent)
+            filepart.flush()
     
     def download_file(self, file_index, chunk_index, file):
         partfilename = str(file_index)+".part"+str(chunk_index)

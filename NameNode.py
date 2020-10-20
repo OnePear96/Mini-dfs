@@ -22,6 +22,12 @@ class NameNode():
         self.num_chunks = num_chunks
         self.path = "dfs/namenode"
         self.load_meta()
+
+    def clear(self):
+        self.file_storage = {}
+        self.filename2index = {}
+        self.index2filename = {}
+        self.num_total_files = 0
         
     def load_meta(self):
         meta_path = self.path + "/metadata"

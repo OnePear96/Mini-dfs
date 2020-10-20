@@ -1,7 +1,7 @@
 import re
 
 cmd_prompt = 'Mini-DFS >> '
-openrations = {"upload", "download", 'ls', 'quit'}
+openrations = {"upload", "download", 'ls', 'quit', 'clear'}
 
 def process_cmd(cmd_str):
     cmd = cmd_str.split()
@@ -31,6 +31,10 @@ def process_cmd(cmd_str):
 
     elif cmd[0].lower() == 'quit' or cmd[0].lower() == 'exit':
         action = 'quit'
+        content = None
+
+    elif cmd[0].lower() == 'clear':
+        action = 'clear'
         content = None
 
     else: 
