@@ -20,9 +20,10 @@ if __name__ == "__main__":
         if action == "download":
             Client.download_file(content)
         if action == "ls":
-            Client.NameNode.list_file()
+            Client.list_file()
         if action == 'clear':
             Client.clear()
         if action == 'quit':
+            Client.quit()
             break
 

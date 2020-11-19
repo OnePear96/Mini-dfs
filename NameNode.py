@@ -2,6 +2,10 @@ import re
 import random
 import os
 import pickle
+import socket
+import sys
+
+from fn_socket import *
 
 
 def getFileSize(file):
@@ -16,12 +20,13 @@ class NameNode():
     List the relationships between replicas and data servers
     Data server management
     '''
-    def __init__(self, num_nodes, num_replicas, num_chunks):
+    def __init__(self, num_nodes = 4, num_replicas = 3, num_chunks = 3):
         self.num_nodes = num_nodes
         self.num_replicas = num_replicas
         self.num_chunks = num_chunks
         self.path = "dfs/namenode"
         self.load_meta()
+        self.connection()
 
     def clear(self):
         self.file_storage = {}
@@ -82,8 +87,10 @@ class NameNode():
         return chunk_node
     
     def list_file(self):
+        Str = ''
         for key in self.index2filename:
-            print ("{}: {}".format(key, self.index2filename[key]))
+            Str += ("{}: {} \n".format(key, self.index2filename[key]))
+        return Str
             
             
     def file_split_postion_size(self,filepath):
@@ -97,3 +104,87 @@ class NameNode():
             current_position += filepartsize
         position_size.append([current_position, filesize - current_position])
         return position_size
+
+
+    def connection(self):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+        host = socket.gethostname() 
+        self.port = 3333
+        self.server.bind((host, self.port))
+        self.server.listen(2)
+    #    self.server.send(b'namenode')
+
+    def client_server(self, conn, addr):
+        print ('Accept connection from {0}'.format(addr))
+        while 1:
+            msgr = conn.recv(1024)
+            msgr = msgr.decode('utf-8').lower()
+        #    conn.send(b'r')
+            if msgr == 'exit':
+                conn.close()
+                break
+            
+            if 'upload' in msgr:
+                print ('receive upload commad')
+            #    print (msgr)
+                _, filepath = msgr.split('#')
+            #    filepath = conn.recv(1024).decode('utf-8')
+                print ('filepath: {}'.format(filepath))
+                nodes_assigned, position_size = NameNode.upload_file(filepath)
+                print ('nodes_assigned: {}'.format(nodes_assigned))
+                print ('position_size: {}'.format(position_size))
+                nodes_assigned_pk = pickle.dumps(nodes_assigned)
+                position_size_pk = pickle.dumps(position_size)
+                send_data(conn, nodes_assigned_pk)
+                send_data(conn, position_size_pk)
+            #    conn.sendall(nodes_assigned_pk)
+            #    conn.sendall(position_size_pk)
+                conn.sendall(str(list(self.index2filename.keys())[-1]).encode('utf-8'))
+
+            if 'download' in msgr:
+                print ('receive download commad')
+                _, fileindex = msgr.split('#')
+                fileindex = int(fileindex)
+            #    fileindex = int(conn.recv(1024).decode('utf-8'))
+                print ('target file index: {}'.format(fileindex))
+                filename = self.index2filename[fileindex]
+                print ('target file name: {}'.format(filename))
+            #    conn.sendall(filename.encode('utf-8'))
+                send_data(conn, filename.encode('utf-8'))
+                chunk_node = self.download_file(fileindex)
+                chunk_node_pk = pickle.dumps(chunk_node)
+            #    conn.sendall(chunk_node_pk)
+                send_data(conn, chunk_node_pk)
+
+            if 'ls' in msgr:
+                print ('receive ls command')
+                file_list = self.list_file()
+                print (file_list)
+                if file_list == '':
+                    send_data(conn, b'No file in dfs')
+                  #  conn.sendall(b'No file in dfs')
+                else:
+                    send_data(conn, file_list.encode('utf-8'))
+                #    conn.sendall(file_list.encode('utf-8'))
+              #  print ('sent')
+
+            if 'clear' in msgr:
+                print ('receive clear command')
+                self.clear()
+                print ('clear!')
+
+            if 'quit' in msgr:
+                print ('close server')
+                conn.close()
+                break
+
+
+
+        #    print ('message from client: {}'.format(msgr.decode('utf-8')))
+        #    conn.sendall('heard you'.strip().encode('utf-8'))
+
+
+if __name__ == "__main__":
+    NameNode = NameNode()
+    conn, addr = NameNode.server.accept()
+    NameNode.client_server(conn, addr)
