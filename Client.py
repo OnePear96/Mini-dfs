@@ -19,15 +19,16 @@ class Client():
     Provide read/write interfaces of a file
     '''
     def __init__(self):
-        self.num_nodes = 4
-        self.num_replicas = 3
-        self.num_chunks = 3
+        self.num_nodes = 2
+        self.num_replicas = 2
+        self.num_chunks = 2
         '''
         self.NameNode = NameNode(num_nodes = self.num_nodes, num_replicas = self.num_replicas, num_chunks = self.num_chunks)
-        '''
+        
         self.DataNodes = []
         for i in range(self.num_nodes):
             self.DataNodes.append(DataNode(index = i))
+        '''
         
         
     #    self.datanode_conn = []
@@ -69,8 +70,12 @@ class Client():
             file.seek(current_position,0)
             partfilecontent = file.read(filepartsize)
             for node_index in list_nodes:
-                Node = self.DataNodes[node_index]
-                Node.upload_file(partfilename = partfilename, partfilecontent = partfilecontent)
+            #    Node = self.DataNodes[node_index]
+            #    Node.upload_file(partfilename = partfilename, partfilecontent = partfilecontent)
+                DataNode_conn = self.datanodes_conn[node_index]
+            #    DataNode_conn.send(('upload#{}'.format(partfilename)).encode('utf-8'))
+                send_data(DataNode_conn, ('upload#{}'.format(partfilename)).encode('utf-8'))
+                send_content(DataNode_conn, partfilecontent, filepartsize)
     
     def download_file(self, fileindex): #or file index
     #    self.namenode_conn.send(b'download')
@@ -88,8 +93,13 @@ class Client():
         chunk_node = pickle.loads(chunk_node_pk)
 
         for chunk_index in range(self.num_chunks):
-            Node = self.DataNodes[chunk_node[chunk_index]]
-            filepartcontent = Node.download_file(fileindex, chunk_index)
+         #   Node = self.DataNodes[chunk_node[chunk_index]]
+         #   filepartcontent = Node.download_file(fileindex, chunk_index)
+            node_index = chunk_node[chunk_index]
+            DataNode_conn = self.datanodes_conn[node_index]
+            send_data(DataNode_conn, ('download#{}#{}'.format(fileindex, chunk_index)).encode('utf-8'))
+        #    DataNode_conn.send(('download#{}#{}'.format(fileindex, chunk_index)).encode('utf-8'))
+            filepartcontent = recv_file(DataNode_conn)
             file.write(filepartcontent)
         file.close()
 
@@ -130,10 +140,11 @@ class Client():
         self.datanodes_conn = []
         for i in range(self.num_nodes):
             conn = socket.socket(
-            socket.AF_INET, socket.SOCK_STREAM) 
+                socket.AF_INET, socket.SOCK_STREAM) 
             conn.connect((host, self.datanode_port[i]))
+            self.datanodes_conn.append(conn)
 
-        for i in self.num_nodes:
+        for i in self.datanodes_conn:
             print (i)
 
 

@@ -20,7 +20,7 @@ class NameNode():
     List the relationships between replicas and data servers
     Data server management
     '''
-    def __init__(self, num_nodes = 4, num_replicas = 3, num_chunks = 3):
+    def __init__(self, num_nodes = 2, num_replicas = 2, num_chunks = 2):
         self.num_nodes = num_nodes
         self.num_replicas = num_replicas
         self.num_chunks = num_chunks
@@ -152,6 +152,7 @@ class NameNode():
             #    conn.sendall(filename.encode('utf-8'))
                 send_data(conn, filename.encode('utf-8'))
                 chunk_node = self.download_file(fileindex)
+                print ('chunk_node: ',chunk_node)
                 chunk_node_pk = pickle.dumps(chunk_node)
             #    conn.sendall(chunk_node_pk)
                 send_data(conn, chunk_node_pk)

@@ -23,6 +23,31 @@ def recv_data(conn, decode = True):
     return data
 
 
+def send_content(conn, filecontent, content_size):
+#    filecontent = filecontent.encode(encoding='utf-8')
+    m = hashlib.md5() 
+    conn.send(str(content_size).encode(encoding='utf-8'))
+    ack = conn.recv(1024)
+    print('filesize:',content_size)
+    i = 0
+    while 1:
+        if (i+1)*1024 < content_size:
+            data = filecontent[i*1024:(i+1)*1024]
+        else:
+            data = filecontent[i*1024:content_size]
+        if not data:
+            print ('file send over...')
+            break
+        m.update(data)
+        conn.send(data)
+        i += 1
+
+    print('server send file md5:',m.hexdigest())
+    conn.send(m.hexdigest().encode(encoding='utf-8'))#
+    ack = conn.recv(1024)
+    print("send done")
+
+
 def send_file(conn, filepath):
     if not os.path.isfile(filepath):
         raise Exception('file not exist')
@@ -31,7 +56,7 @@ def send_file(conn, filepath):
     filesize = os.stat(filepath).st_size
     
     conn.send(str(filesize).encode(encoding='utf-8'))
-#    ack = conn.recv(1024)
+    ack = conn.recv(1024)
     print('filesize:',filesize)
     '''
     for line in f:
@@ -49,12 +74,14 @@ def send_file(conn, filepath):
     print('server send file md5:',m.hexdigest())
     f.close()
     conn.send(m.hexdigest().encode(encoding='utf-8'))#
+    ack = conn.recv(1024)
     print("send done")
 
 
 def recv_file(conn):
     file_total_size = int(conn.recv(1024).decode())
     print("file_total_size:",file_total_size)
+    conn.send(b'recv')
     recv_size = 0
     recv_data = b''
     count = 0
@@ -79,6 +106,7 @@ def recv_file(conn):
     else:
         new_file_md5 = m.hexdigest()
         server_datamd5 = conn.recv(1024).decode()
+        conn.send(b'recv')
         print("file recv done {}/{}".format(recv_size,file_total_size))
         print("new_file_md5:",new_file_md5)
         print('server_datamd5:',server_datamd5)

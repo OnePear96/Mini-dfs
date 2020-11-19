@@ -52,13 +52,14 @@ class DataNode():
         if not os.path.isfile(partfilepath):
             print ("file or chunk not in this Node !")
             return
-        filepart = open(partfilepath, 'rb')
-        content = filepart.read()
-        filepart.close()
-        return content
+    #    filepart = open(partfilepath, 'rb')
+    #    content = filepart.read()
+    #    filepart.close()
+    #    return content
+        return partfilepath
 
     def connection(self):
-        num_nodes = 4
+        num_nodes = 2
         datanode_port = list(range(2222,2222+num_nodes))
         if self.index >= num_nodes:
             raise Exception('DataNode index out of range')
@@ -68,12 +69,43 @@ class DataNode():
         self.server.bind((host, self.port))
         self.server.listen(2)
 
+    def client_server(self, conn, addr):
+        print ('Accept connection from {0}'.format(addr))
+        while 1:
+            msgr = recv_data(conn, decode = False)
+            msgr = msgr.decode('utf-8').lower()
+        #    conn.send(b'r')
+            print ('receive message: {}'.format(msgr))
+            if msgr == 'exit':
+                conn.close()
+                break
+
+            if 'download' in msgr:
+                print ('receive download commad')
+                _, fileindex, chunk_index = msgr.split('#')
+                fileindex = int(fileindex)
+                chunk_index = int(chunk_index)
+                print ('target file index: {}, chunk index: {}'.format(fileindex, chunk_index))
+                partfilepath = self.download_file(fileindex, chunk_index)
+                send_file(conn, partfilepath)
+
+            if 'upload' in msgr:
+                print ('receive download commad')
+                _, partfilename = msgr.split('#')
+                print ('target partfilename: {}'.format(partfilename))
+                filepartcontent = recv_file(conn)
+                self.upload_file(partfilename,filepartcontent)
+
+
+
 
 
 if __name__ == "__main__":
     index = args.number
     print ('create DataNode of index {}'.format(index))
     DataNode = DataNode(index)
+    conn, addr = DataNode.server.accept()
+    DataNode.client_server(conn, addr)
     
     
 
