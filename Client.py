@@ -69,7 +69,7 @@ class Client():
                 send_data(DataNode_conn, ('upload#{}'.format(partfilename)).encode('utf-8'))
                 print ('sending part file to node {}'.format(node_index))
                 send_content(DataNode_conn, partfilecontent, filepartsize)
-        print ('finish upload')
+        print ('finish upload, file ID', file_index)
     
     def download_file(self, fileindex): 
         self.namenode_conn.send(('download#{}'.format(fileindex)).encode('utf-8'))
