@@ -17,11 +17,11 @@ The mini-dfs files are stored in the folder named `dfs`
 
 ## Demonstration
 
-![demo1](/Users/onepear/Documents/大数据课/project/Mini-dfs-dis/docs/demo1.gif)
+![demo1](./docs/demo1.gif)
 
-![demo3](/Users/onepear/Documents/大数据课/project/Mini-dfs-dis/docs/demo3.gif)
+![demo3](./docs/demo3.gif)
 
-![demo2](/Users/onepear/Documents/大数据课/project/Mini-dfs-dis/docs/demo2.gif)
+![demo2](./docs/demo2.gif)
 
 
 
