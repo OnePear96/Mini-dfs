@@ -1,7 +1,7 @@
 import re
 
 cmd_prompt = 'Mini-DFS >> '
-openrations = {"upload", "download", 'ls', 'quit', 'clear'}
+openrations = {"upload", "download", 'ls', 'quit', 'clear', 'state'}
 
 def process_cmd(cmd_str):
     cmd = cmd_str.split()
@@ -24,9 +24,21 @@ def process_cmd(cmd_str):
         except:
             print ('Usage: \n upload file_path \n download file_index \n ls \n quit')
             return None, None
+
+    elif cmd[0].lower() == 'state':
+        action = 'state'
+        try:
+            content = int(cmd[1])
+        except:
+            print ('Usage: \n upload file_path \n download file_index \n ls \n quit')
+            return None, None
     
     elif cmd[0].lower() == 'ls':
         action = 'ls'
+        content = None
+
+    elif cmd[0].lower() == 'check':
+        action = 'check'
         content = None
 
     elif cmd[0].lower() == 'quit' or cmd[0].lower() == 'exit':
@@ -36,6 +48,11 @@ def process_cmd(cmd_str):
     elif cmd[0].lower() == 'clear':
         action = 'clear'
         content = None
+
+    elif cmd[0].lower() == 'fetch':
+        action = 'fetch'
+        content = int(cmd[1]), int(cmd[2])
+
 
     else: 
         print ('Usage: \n upload file_path \n download file_index \n ls \n quit')
@@ -50,6 +67,6 @@ if __name__ == "__main__":
         print (cmd_prompt, end = '')
         cmd_str = input()
         action, content = process_cmd(cmd_str)
-    #   print ('action: {}, content: {}'.format(action, content))
+        print ('action: {}, content: {}'.format(action, content))
         if action == 'quit':
             break

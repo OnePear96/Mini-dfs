@@ -1,0 +1,5 @@
+{
+    "num_nodes": 4,
+    "num_replicas": 3,
+    "num_chunks": 3
+}

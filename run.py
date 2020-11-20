@@ -23,6 +23,12 @@ if __name__ == "__main__":
             Client.list_file()
         if action == 'clear':
             Client.clear()
+        if action == 'state':
+            Client.file_state(content)
+        if action == 'check':
+            Client.check()
+        if action == 'fetch':
+            Client.fetch_file(content[0], content[1])
         if action == 'quit':
             Client.quit()
             break

@@ -1,6 +1,18 @@
 import os
 import argparse
 from fn_socket import *
+import pickle 
+import json
+
+
+
+class Params():
+    def __init__(self, path):
+        with open(path) as params_file:
+            params = json.load(params_file)
+            self.__dict__.update(params)
+
+params = Params('params.json')
 
 
 
@@ -17,49 +29,24 @@ class DataNode():
         self.index = index
         self.path = "dfs/datanode%d"%index
         self.connection()
-    '''    
-    def upload_file(self, file_index, chunk_index, position_size, file):
-        partfilename = str(file_index)+".part"+str(chunk_index)
-        partfilepath = self.path + "/" + partfilename
-        current_position, filepartsize = position_size
-        file.seek(current_position,0)
-        content = file.read(filepartsize)
-        with open(partfilepath, "wb") as filepart:
-            filepart.write(content)
-            filepart.flush()
-    '''
+
 
     def upload_file(self,partfilename, partfilecontent):
         partfilepath = self.path + "/" + partfilename
         with open(partfilepath, "wb") as filepart:
             filepart.write(partfilecontent)
             filepart.flush()
-    
-    '''
-    def download_file(self, file_index, chunk_index, file):
-        partfilename = str(file_index)+".part"+str(chunk_index)
-        partfilepath = self.path + "/" + partfilename
-        if not os.path.isfile(partfilepath):
-            print ("file or chunk not in this Node !")
-            return
-        filepart = open(partfilepath, 'rb')
-        file.write(filepart.read())
-        filepart.close()
-    '''
+
     def download_file(self, file_index, chunk_index):
         partfilename = str(file_index)+".part"+str(chunk_index)
         partfilepath = self.path + "/" + partfilename
         if not os.path.isfile(partfilepath):
             print ("file or chunk not in this Node !")
             return
-    #    filepart = open(partfilepath, 'rb')
-    #    content = filepart.read()
-    #    filepart.close()
-    #    return content
         return partfilepath
 
     def connection(self):
-        num_nodes = 2
+        num_nodes = params.num_nodes
         datanode_port = list(range(2222,2222+num_nodes))
         if self.index >= num_nodes:
             raise Exception('DataNode index out of range')
@@ -68,6 +55,20 @@ class DataNode():
         host = socket.gethostname() 
         self.server.bind((host, self.port))
         self.server.listen(2)
+
+    def check(self, file_sto):
+        print ('file storage in this node: ', file_sto)
+        if not os.path.isdir(self.path):
+            return 0
+        file_list = os.listdir(self.path)
+        print ('file list in this node: ', file_list)
+        for file_index in file_sto:
+            for chunk_index in file_sto[file_index]:
+                partfilename = str(file_index)+".part"+str(chunk_index)
+                if partfilename not in file_list:
+                    print (partfilename, 'not in node!') 
+                    return 0
+        return 1
 
     def client_server(self, conn, addr):
         print ('Accept connection from {0}'.format(addr))
@@ -90,11 +91,42 @@ class DataNode():
                 send_file(conn, partfilepath)
 
             if 'upload' in msgr:
-                print ('receive download commad')
+                print ('receive upload commad')
                 _, partfilename = msgr.split('#')
                 print ('target partfilename: {}'.format(partfilename))
                 filepartcontent = recv_file(conn)
                 self.upload_file(partfilename,filepartcontent)
+
+            if 'check' in msgr:
+                print ('receive check commad')
+                files_sto_pk = recv_data(conn, False)
+                file_sto = pickle.loads(files_sto_pk)
+                result = self.check(file_sto)
+                print ('check result:',result)
+                result = str(result).encode('utf-8')
+                send_data(conn, result)
+
+            if 'recov_help' in msgr:
+                print ('receive recov_help commad')
+                _, file_index, chunk = msgr.split('#')
+                file_index = int(file_index)
+                chunk = int(chunk)
+                print ('target file index: {}, chunk index: {}'.format(file_index, chunk))
+                partfilepath = self.download_file(file_index, chunk)
+                send_file(conn, partfilepath)
+
+            if 'recovery' in msgr:
+                print ('receive recovery commad')
+                _, file_index, chunk = msgr.split('#')
+                partfilename = str(file_index)+".part"+str(chunk)
+                filepartcontent = recv_file(conn)
+                self.upload_file(partfilename,filepartcontent)
+
+            if 'quit' in msgr:
+                print ('close server')
+                conn.close()
+                break
+
 
 
 

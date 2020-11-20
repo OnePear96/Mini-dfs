@@ -4,8 +4,18 @@ import os
 import pickle
 import socket
 import sys
+import json
 
 from fn_socket import *
+
+
+class Params():
+    def __init__(self, path):
+        with open(path) as params_file:
+            params = json.load(params_file)
+            self.__dict__.update(params)
+
+params = Params('params.json')
 
 
 def getFileSize(file):
@@ -20,7 +30,7 @@ class NameNode():
     List the relationships between replicas and data servers
     Data server management
     '''
-    def __init__(self, num_nodes = 2, num_replicas = 2, num_chunks = 2):
+    def __init__(self, num_nodes = params.num_nodes, num_replicas = params.num_replicas, num_chunks = params.num_chunks):
         self.num_nodes = num_nodes
         self.num_replicas = num_replicas
         self.num_chunks = num_chunks
@@ -112,23 +122,19 @@ class NameNode():
         self.port = 3333
         self.server.bind((host, self.port))
         self.server.listen(2)
-    #    self.server.send(b'namenode')
 
     def client_server(self, conn, addr):
         print ('Accept connection from {0}'.format(addr))
         while 1:
             msgr = conn.recv(1024)
             msgr = msgr.decode('utf-8').lower()
-        #    conn.send(b'r')
             if msgr == 'exit':
                 conn.close()
                 break
             
             if 'upload' in msgr:
                 print ('receive upload commad')
-            #    print (msgr)
                 _, filepath = msgr.split('#')
-            #    filepath = conn.recv(1024).decode('utf-8')
                 print ('filepath: {}'.format(filepath))
                 nodes_assigned, position_size = NameNode.upload_file(filepath)
                 print ('nodes_assigned: {}'.format(nodes_assigned))
@@ -137,24 +143,19 @@ class NameNode():
                 position_size_pk = pickle.dumps(position_size)
                 send_data(conn, nodes_assigned_pk)
                 send_data(conn, position_size_pk)
-            #    conn.sendall(nodes_assigned_pk)
-            #    conn.sendall(position_size_pk)
                 conn.sendall(str(list(self.index2filename.keys())[-1]).encode('utf-8'))
 
             if 'download' in msgr:
                 print ('receive download commad')
                 _, fileindex = msgr.split('#')
                 fileindex = int(fileindex)
-            #    fileindex = int(conn.recv(1024).decode('utf-8'))
                 print ('target file index: {}'.format(fileindex))
                 filename = self.index2filename[fileindex]
                 print ('target file name: {}'.format(filename))
-            #    conn.sendall(filename.encode('utf-8'))
                 send_data(conn, filename.encode('utf-8'))
                 chunk_node = self.download_file(fileindex)
                 print ('chunk_node: ',chunk_node)
                 chunk_node_pk = pickle.dumps(chunk_node)
-            #    conn.sendall(chunk_node_pk)
                 send_data(conn, chunk_node_pk)
 
             if 'ls' in msgr:
@@ -163,11 +164,8 @@ class NameNode():
                 print (file_list)
                 if file_list == '':
                     send_data(conn, b'No file in dfs')
-                  #  conn.sendall(b'No file in dfs')
                 else:
                     send_data(conn, file_list.encode('utf-8'))
-                #    conn.sendall(file_list.encode('utf-8'))
-              #  print ('sent')
 
             if 'clear' in msgr:
                 print ('receive clear command')
@@ -179,10 +177,39 @@ class NameNode():
                 conn.close()
                 break
 
+            if 'state' in msgr:
+                print ('receive state command')
+                _, fileindex = msgr.split('#')
+                fileindex = int(fileindex)
+                print ('target file index: {}'.format(fileindex))
+                filename = self.index2filename[fileindex]
+                print ('target file name: {}'.format(filename))
+                send_data(conn, filename.encode('utf-8'))
+                chunk_node = self.file_storage[fileindex]
+                print ('chunk_node: ',chunk_node)
+                chunk_node_pk = pickle.dumps(chunk_node)
+                send_data(conn, chunk_node_pk)
+
+            if 'check' in msgr:
+                print ('receive check command')
+                file_storage_pk = pickle.dumps(self.file_storage)
+                send_data(conn, file_storage_pk)
+
+            if 'fetch' in msgr:
+                _, fileindex, chunkindex = msgr.split('#')
+                fileindex = int(fileindex)
+                chunkindex = int(chunkindex)
+                print ('target file index: {}'.format(fileindex))
+                filename = self.index2filename[fileindex]
+                print ('target file name: {}'.format(filename))
+                send_data(conn, filename.encode('utf-8'))
+                chunk_node = self.download_file(fileindex)[chunkindex]
+                print ('chunk_node: ',chunk_node)
+                send_data(conn, str(chunk_node).encode('utf-8'))
 
 
-        #    print ('message from client: {}'.format(msgr.decode('utf-8')))
-        #    conn.sendall('heard you'.strip().encode('utf-8'))
+
+
 
 
 if __name__ == "__main__":
