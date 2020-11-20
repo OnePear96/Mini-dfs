@@ -51,8 +51,12 @@ def process_cmd(cmd_str):
         content = None
 
     elif cmd[0].lower() == 'fetch':
-        action = 'fetch'
-        content = int(cmd[1]), int(cmd[2])
+        try:
+            action = 'fetch'
+            content = int(cmd[1]), int(cmd[2])
+        except:
+            print (h)
+            return None, None
 
 
     else: 

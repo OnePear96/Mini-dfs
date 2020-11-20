@@ -185,7 +185,7 @@ class Client():
 
     def list_file(self):
         self.namenode_conn.send(b'ls')
-        print("Waitting for recving message...")
+     #   print("Waitting for recving message...")
         file_list = recv_data(self.namenode_conn)
         print (file_list)
 
