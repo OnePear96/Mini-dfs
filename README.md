@@ -1,6 +1,6 @@
 # Mini Distributed File System
 
-A mini-dfs is implemented in python that is able to
+A mini-dfs implemented in python that is able to
 
 - upload a file to the mini-dfs
 - download a file from the mini-dfs 
